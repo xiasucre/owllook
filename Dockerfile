@@ -1,11 +1,13 @@
-# 基于python3.6镜像来构建owllook镜像
-FROM python:3.6
-MAINTAINER howie6879 <howie6879@gmail.com>
+# 基于openanolis龙蜥镜像来构建owllook镜像
+FROM openanolis/anolisos
+MAINTAINER SYS
 ENV TIME_ZONE=Asia/Shanghai
-RUN echo "${TIME_ZONE}" > /etc/timezone \
-    && ln -sf /usr/share/zoneinfo/${TIME_ZONE} /etc/localtime
 ADD . /owllook
 WORKDIR /owllook
-RUN pip install --no-cache-dir --trusted-host mirrors.aliyun.com -i http://mirrors.aliyun.com/pypi/simple/ pipenv
-RUN pipenv install --skip-lock
-RUN find . -name "*.pyc" -delete
+RUN echo "${TIME_ZONE}" > /etc/timezone \
+    && ln -sf /usr/share/zoneinfo/${TIME_ZONE} /etc/localtime \
+    && yum install gcc gcc-c++ glibc make automake autoconf python36 python36-devel openssl openssl-devel which \
+    && pip install --no-cache-dir --trusted-host mirrors.aliyun.com -i http://mirrors.aliyun.com/pypi/simple/ pipenv \
+    && pipenv install --skip-lock && pipenv install pymongo \
+    && find . -name "*.pyc" -delete
+CMD ["pipenv", "run", "gunicorn", "-c", "owllook/config/gunicorn.py", "--worker-class", "sanic.worker.GunicornWorker", "owllook.server:app"]
